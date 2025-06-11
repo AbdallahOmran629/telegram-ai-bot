@@ -7,14 +7,19 @@ from PIL import Image
 from io import BytesIO
 
 # === CONFIG ===
-TELEGRAM_TOKEN = os.getenv("8006683736:AAEUb1C0jdQV1DCTmzUn_Y16ik8MMlNPVyc")
-if not TELEGRAM_TOKEN:
-    raise ValueError("TELEGRAM_TOKEN is not set. Check your Railway environment variables.")
-
-app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
-GROQ_API_KEY = os.getenv("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")
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")  # ✅ use env var name
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")      # ✅ use env var name
 MODEL = "llama3-70b-8192"
 
+# === FAIL EARLY if missing token ===
+if not TELEGRAM_TOKEN:
+    raise ValueError("TELEGRAM_TOKEN is not set. Check Railway environment variables.")
+if not GROQ_API_KEY:
+    raise ValueError("GROQ_API_KEY is not set. Check Railway environment variables.")
+
+app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
+
+# === AI REQUEST ===
 def ask_groq(prompt):
     url = "https://api.groq.com/openai/v1/chat/completions"
     headers = {
@@ -27,7 +32,7 @@ def ask_groq(prompt):
         "temperature": 0.7
     }
     response = requests.post(url, headers=headers, json=data)
-    print("Groq status code:", response.status_code)
+    print("Groq status:", response.status_code)
     print("Groq response:", response.text)
 
     try:
@@ -38,7 +43,11 @@ def ask_groq(prompt):
 # === HANDLERS ===
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.chat.send_action(action='typing')
-    await update.message.reply_text("Welcome to AI Code Bot!\nUse /explain, /debug, or /generate followed by your code or question. You can also send an image to remove its background in just 30 sec.")
+    await update.message.reply_text(
+        "👋 Welcome to AI Code Bot!\n\n"
+        "Use /explain, /debug, or /generate followed by your code or question.\n"
+        "You can also send an image to remove its background!"
+    )
 
 async def handle_explain(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = ' '.join(context.args)
@@ -65,7 +74,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def remove_bg(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message.photo:
-        await update.message.reply_text("Please send an image to remove its background.")
+        await update.message.reply_text("📸 Please send an image to remove its background.")
         return
 
     photo = update.message.photo[-1]
@@ -81,9 +90,7 @@ async def remove_bg(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_photo(photo=bio, filename="no_bg.png")
 
-# === MAIN ===
-app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
-
+# === ROUTING ===
 app.add_handler(CommandHandler("start", start))
 app.add_handler(CommandHandler("explain", handle_explain))
 app.add_handler(CommandHandler("debug", handle_debug))
