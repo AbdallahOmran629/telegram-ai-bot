@@ -7,9 +7,13 @@ from PIL import Image
 from io import BytesIO
 
 # === CONFIG ===
-TELEGRAM_TOKEN = os.getenv ('8006683736:AAEUb1C0jdQV1DCTmzUn_Y16ik8MMlNPVyc')
-GROQ_API_KEY = os.getenv ('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')
-MODEL = 'llama3-70b-8192'
+TELEGRAM_TOKEN = os.getenv("8006683736:AAEUb1C0jdQV1DCTmzUn_Y16ik8MMlNPVyc")
+if not TELEGRAM_TOKEN:
+    raise ValueError("TELEGRAM_TOKEN is not set. Check your Railway environment variables.")
+
+app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
+GROQ_API_KEY = os.getenv("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")
+MODEL = "llama3-70b-8192"
 
 def ask_groq(prompt):
     url = "https://api.groq.com/openai/v1/chat/completions"
